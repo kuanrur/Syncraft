@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+xiami.db
+*.db
+*.db-*

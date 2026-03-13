@@ -1,0 +1,28 @@
+{
+  "name": "xiami",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx tsx src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@slack/bolt": "^4.6.0",
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.3.1",
+    "luxon": "^3.7.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^25.5.0"
+  }
+}
