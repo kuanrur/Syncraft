@@ -1,3 +1,4 @@
+import type { WebClient } from '@slack/web-api';
 import type { SuggestionContext, ReplySuggestion } from '../types';
 import { PAIR_FRICTION_THRESHOLD_MIN } from '../constants';
 import { generateSuggestions } from '../services/replySuggestionService';
@@ -44,7 +45,7 @@ export function pickContextLine(
 const URGENCY_KEYWORDS = ['asap', 'urgent', 'blocking', 'eod', 'critical', 'immediately'];
 
 export interface PostSuggestionChipsArgs {
-  client: any;
+  client: WebClient;
   channelId: string;
   threadTs?: string | null;
   requesterId: string;
@@ -90,8 +91,8 @@ export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promis
     const info = await client.users.info({ user: senderId });
     const u = (info.user as any) ?? {};
     senderName = u.profile?.display_name_normalized || u.profile?.display_name || u.real_name || u.name || senderId;
-  } catch {
-    // ignore — keep senderId
+  } catch (err) {
+    console.warn('[postSuggestionChips] users.info failed (name will show as ID):', err);
   }
 
   const contextLine = pickContextLine(suggestions, context, senderName);
@@ -112,7 +113,7 @@ export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promis
       await client.chat.postEphemeral({
         channel: channelId,
         user: requesterId,
-        text: "Couldn't post suggestions here — try again from a channel.",
+        text: "Couldn't post suggestions right now — please try again.",
       });
     } catch {
       // give up silently — already logged
