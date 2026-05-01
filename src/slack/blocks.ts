@@ -434,27 +434,29 @@ export function buildSuggestionChipsBlocks(
     senderName,
   });
 
-  const chipElements: ActionsBlock['elements'] = suggestions.map((s, i) => {
-    const fullText = s.body;
-    const truncated = fullText.length > 75 ? fullText.slice(0, 74) + '…' : fullText;
-    return {
-      type: 'button',
-      action_id: `chip_select_${i}`,
-      text: { type: 'plain_text', text: truncated, emoji: true },
-      value: JSON.stringify({ fullText, cachedState }),
-    };
-  });
-
-  chipElements.push({
-    type: 'button',
-    action_id: 'chip_dismiss',
-    text: { type: 'plain_text', text: '✕ Dismiss', emoji: true },
-    value: '{}',
+  // One section per suggestion — full body text on the left, "Use this" button on the right.
+  // Sections accept up to 3000 chars, so suggestions are never truncated.
+  suggestions.forEach((s, i) => {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: s.body },
+      accessory: {
+        type: 'button',
+        action_id: `chip_select_${i}`,
+        text: { type: 'plain_text', text: 'Use this', emoji: true },
+        value: JSON.stringify({ fullText: s.body, cachedState }),
+      },
+    });
   });
 
   blocks.push({
     type: 'actions',
-    elements: chipElements,
+    elements: [{
+      type: 'button',
+      action_id: 'chip_dismiss',
+      text: { type: 'plain_text', text: '✕ Dismiss', emoji: true },
+      value: '{}',
+    }],
   });
 
   return blocks;

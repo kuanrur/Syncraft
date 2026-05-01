@@ -109,19 +109,22 @@ describe('buildSuggestionChipsBlocks', () => {
     { label: 'Acknowledge + next step', body: "Thanks — I'll follow up.", reasoning: '' },
   ];
 
-  it('renders a chip per suggestion plus a Dismiss button', () => {
+  it('renders one section per suggestion with a Use-this accessory button, plus a Dismiss actions block', () => {
     const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
+    const sections = blocks.filter((b: any) => b.type === 'section') as any[];
+    assert.equal(sections.length, 2);
+    assert.equal(sections[0].text.text, 'Got it, thanks.');
+    assert.equal(sections[0].accessory.action_id, 'chip_select_0');
+    assert.equal(sections[0].accessory.text.text, 'Use this');
+    assert.equal(sections[1].text.text, "Thanks — I'll follow up.");
+    assert.equal(sections[1].accessory.action_id, 'chip_select_1');
+
     const actions = blocks.find((b: any) => b.type === 'actions') as any;
-    assert.ok(actions, 'actions block exists');
-    // 2 chip buttons + 1 dismiss button
-    assert.equal(actions.elements.length, 3);
-    assert.equal(actions.elements[0].action_id, 'chip_select_0');
-    assert.equal(actions.elements[0].text.text, 'Got it, thanks.');
-    assert.equal(actions.elements[1].action_id, 'chip_select_1');
-    assert.equal(actions.elements[2].action_id, 'chip_dismiss');
+    assert.equal(actions.elements.length, 1);
+    assert.equal(actions.elements[0].action_id, 'chip_dismiss');
   });
 
-  it('omits the context section when contextLine is null', () => {
+  it('omits the context block when contextLine is null', () => {
     const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
     const contextBlocks = blocks.filter((b: any) => b.type === 'context');
     assert.equal(contextBlocks.length, 0);
@@ -142,18 +145,16 @@ describe('buildSuggestionChipsBlocks', () => {
     assert.equal(actions.elements[0].action_id, 'chip_dismiss');
   });
 
-  it('truncates chip label > 75 chars and stores full text in value', () => {
-    const long = 'x'.repeat(120);
+  it('renders long suggestions in full without truncation, mirrored in the button value', () => {
+    const long = 'x'.repeat(200);
     const blocks = buildSuggestionChipsBlocks(
       [{ label: 'Long', body: long, reasoning: '' }],
       null,
       'Kevin',
     );
-    const actions = blocks.find((b: any) => b.type === 'actions') as any;
-    const chip = actions.elements[0];
-    assert.ok(chip.text.text.length <= 75, `label is ${chip.text.text.length} chars`);
-    assert.ok(chip.text.text.endsWith('…'));
-    const value = JSON.parse(chip.value);
+    const section = blocks.find((b: any) => b.type === 'section') as any;
+    assert.equal(section.text.text, long);
+    const value = JSON.parse(section.accessory.value);
     assert.equal(value.fullText, long);
   });
 });
