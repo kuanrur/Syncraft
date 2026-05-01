@@ -497,58 +497,6 @@ export function buildCopySwapBlocks(
   ];
 }
 
-// ── Suggestion Modal ──────────────────────────────────────────────────────────
-
-export function buildSuggestionModal(
-  messageText: string,
-  senderName: string,
-  suggestions: ReplySuggestion[],
-  contextSummary: string[],
-): ModalView {
-  const preview = messageText.length > 150 ? messageText.slice(0, 150) + '…' : messageText;
-
-  const blocks: KnownBlock[] = [
-    {
-      type: 'section',
-      text: { type: 'mrkdwn', text: `*📝 Replying to:*\n> ${preview}\nfrom @${senderName}` },
-    },
-  ];
-
-  if (contextSummary.length > 0) {
-    blocks.push({ type: 'divider' });
-    blocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: `*📊 Context*\n${contextSummary.map(c => `• ${c}`).join('\n')}` },
-    });
-  }
-
-  suggestions.forEach((s, i) => {
-    const idx = i + 1;
-    blocks.push({ type: 'divider' });
-    blocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: `*💡 Suggestion ${idx}: ${s.label}*\n\`\`\`${s.body}\`\`\`\n_Why: ${s.reasoning}_` },
-    });
-    blocks.push({
-      type: 'actions',
-      block_id: `suggestion_${idx}`,
-      elements: [{
-        type: 'button',
-        text: { type: 'plain_text', text: '📋 Copy', emoji: true },
-        action_id: `copy_suggestion_${idx}`,
-        value: s.body,
-      }],
-    });
-  });
-
-  return {
-    type: 'modal',
-    title: { type: 'plain_text', text: 'Suggested Replies', emoji: true },
-    close: { type: 'plain_text', text: 'Close', emoji: true },
-    blocks,
-  };
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function capitalize(s: string): string {

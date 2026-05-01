@@ -3,7 +3,7 @@ import { getProfile } from '../db/profileRepo';
 import { getUserTraits } from '../db/commTraitsRepo';
 import { getAvailability } from '../services/availabilityService';
 import { getReplyEstimate } from '../services/replyEstimateService';
-import { buildAvailabilityBlocks, buildSuggestionModal } from './blocks';
+import { buildAvailabilityBlocks } from './blocks';
 import { postSuggestionChips } from './chips';
 
 export function registerCommand(app: App): void {
@@ -143,76 +143,3 @@ export function registerCommand(app: App): void {
   });
 }
 
-// Shared helper used by both commands.ts and shortcuts.ts
-export async function openSuggestionModal({
-  client,
-  triggerId,
-  messageText,
-  senderId,
-  requesterId,
-}: {
-  client: any;
-  triggerId: string;
-  messageText: string;
-  senderId: string;
-  requesterId: string;
-}): Promise<void> {
-  const { generateSuggestions } = await import('../services/replySuggestionService');
-  const { classifyIntent } = await import('../services/intentClassifier');
-  const { getProfile } = await import('../db/profileRepo');
-  const { getUserTraits, getPairTraits, getTeamTraits } = await import('../db/commTraitsRepo');
-
-  const URGENCY_KEYWORDS = ['asap', 'urgent', 'blocking', 'eod', 'critical', 'immediately'];
-  const isUrgent = URGENCY_KEYWORDS.some(kw => messageText.toLowerCase().includes(kw));
-
-  const intent = classifyIntent(messageText);
-  const senderProfile = getProfile(senderId);
-  const senderTraits = getUserTraits(senderId);
-  const requesterTraits = getUserTraits(requesterId);
-  const [uA, uB] = [senderId, requesterId].sort();
-  const pairTraits = getPairTraits(uA, uB);
-  const teamTraits = getTeamTraits('default');
-
-  const context = {
-    messageText,
-    senderId,
-    requesterId,
-    senderProfile,
-    senderTraits,
-    requesterTraits,
-    pairTraits,
-    teamTraits,
-    intent,
-    isUrgent,
-  };
-
-  const suggestions = generateSuggestions(context);
-
-  // Build context summary lines
-  const contextSummary: string[] = [];
-  if (senderTraits && senderTraits.messagesSampled >= 10) {
-    contextSummary.push(`Sender prefers: ${senderTraits.lengthBucket} messages, ${senderTraits.formality}`);
-    if (senderTraits.topIntentsSent.length > 0) {
-      contextSummary.push(`They typically ask for: ${senderTraits.topIntentsSent.join(', ')}`);
-    }
-    if (pairTraits && pairTraits.avgResponseTimeAtoBMin > 0) {
-      contextSummary.push(`Your usual reply time to them: ~${Math.round(pairTraits.avgResponseTimeAtoBMin)} min`);
-    }
-    if (senderTraits.statedPreferences.length > 0) {
-      contextSummary.push(`Note: "${senderTraits.statedPreferences[0]}" — @${senderId}`);
-    }
-  }
-
-  // Get sender display name
-  let senderName = senderId;
-  try {
-    const info = await client.users.info({ user: senderId });
-    senderName = (info.user as any)?.display_name || (info.user as any)?.real_name || senderId;
-  } catch (e) { /* ignore */ }
-
-  const { buildSuggestionModal } = await import('./blocks');
-  await client.views.open({
-    trigger_id: triggerId,
-    view: buildSuggestionModal(messageText, senderName, suggestions, contextSummary),
-  });
-}
