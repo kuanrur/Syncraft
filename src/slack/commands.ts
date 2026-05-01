@@ -4,13 +4,14 @@ import { getUserTraits } from '../db/commTraitsRepo';
 import { getAvailability } from '../services/availabilityService';
 import { getReplyEstimate } from '../services/replyEstimateService';
 import { buildAvailabilityBlocks, buildSuggestionModal } from './blocks';
+import { postSuggestionChips } from './chips';
 
 export function registerCommand(app: App): void {
-  app.command('/xiami', async ({ command, ack, respond, client, body }) => {
+  app.command('/syncraft', async ({ command, ack, respond, client, body }) => {
     await ack();
 
     const text = (command.text ?? '').trim();
-    console.log('[/xiami] received text:', JSON.stringify(text));
+    console.log('[/syncraft] received text:', JSON.stringify(text));
 
     // Case 1: mention @user — handles both <@UID> and plain @username
     const mentionMatch = text.match(/<@(U[A-Z0-9]+)(?:\|[^>]*)?>/);
@@ -35,13 +36,13 @@ export function registerCommand(app: App): void {
           );
           resolved = found?.id ?? null;
           if (!resolved) {
-            console.log('[/xiami] looking for:', username);
-            console.log('[/xiami] available members:', members.filter(m => !m.is_bot && !m.deleted).map((m: any) => ({
+            console.log('[/syncraft] looking for:', username);
+            console.log('[/syncraft] available members:', members.filter(m => !m.is_bot && !m.deleted).map((m: any) => ({
               id: m.id, name: m.name, display: m.profile?.display_name, real: m.real_name
             })));
           }
         } catch (e) {
-          console.warn('[/xiami] users.list failed:', e);
+          console.warn('[/syncraft] users.list failed:', e);
         }
         if (!resolved) {
           await respond({ response_type: 'ephemeral', text: `Couldn't find user "@${username}" in this workspace.` });
@@ -54,7 +55,7 @@ export function registerCommand(app: App): void {
       try {
         const info = await client.users.info({ user: targetUserId });
         const u = info.user as any;
-        console.log('[/xiami] user fields:', JSON.stringify({
+        console.log('[/syncraft] user fields:', JSON.stringify({
           name: u?.name,
           real_name: u?.real_name,
           display_name: u?.profile?.display_name,
@@ -62,7 +63,7 @@ export function registerCommand(app: App): void {
         }));
         targetName = u?.profile?.display_name_normalized || u?.profile?.display_name || u?.real_name || u?.name || targetUserId;
       } catch (e) {
-        console.warn('[/xiami] users.info error:', e);
+        console.warn('[/syncraft] users.info error:', e);
       }
 
       const profile = getProfile(targetUserId);
@@ -71,7 +72,7 @@ export function registerCommand(app: App): void {
         profile.displayName = targetName;
       }
       if (!profile) {
-        await respond({ response_type: 'ephemeral', text: 'No Xiami profile found for this user yet.' });
+        await respond({ response_type: 'ephemeral', text: 'No Syncraft profile found for this user yet.' });
         return;
       }
       if (!profile.sharingEnabled) {
@@ -90,11 +91,11 @@ export function registerCommand(app: App): void {
       return;
     }
 
-    // Case 2: /xiami reply
+    // Case 2: /syncraft reply
     if (text.toLowerCase().startsWith('reply')) {
       const threadTs = command.thread_ts ?? (body as any).thread_ts;
       if (!threadTs) {
-        await respond({ response_type: 'ephemeral', text: 'Use `/xiami reply` inside a thread to get suggestions.' });
+        await respond({ response_type: 'ephemeral', text: 'Use `/syncraft reply` inside a thread to get suggestions.' });
         return;
       }
 
@@ -123,12 +124,13 @@ export function registerCommand(app: App): void {
         return;
       }
 
-      await openSuggestionModal({
+      await postSuggestionChips({
         client,
-        triggerId: (body as any).trigger_id,
-        messageText: parentText,
-        senderId,
+        channelId: command.channel_id,
+        threadTs,
         requesterId: command.user_id,
+        senderId,
+        messageText: parentText,
       });
       return;
     }
@@ -136,7 +138,7 @@ export function registerCommand(app: App): void {
     // Case 3: help
     await respond({
       response_type: 'ephemeral',
-      text: 'Usage:\n• `/xiami @someone` — Check availability\n• `/xiami reply` — Get reply suggestions (use in a thread)',
+      text: 'Usage:\n• `/syncraft @someone` — Check availability\n• `/syncraft reply` — Get reply suggestions (use in a thread)',
     });
   });
 }
