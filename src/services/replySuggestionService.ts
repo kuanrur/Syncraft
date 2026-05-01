@@ -153,6 +153,27 @@ function buildIntentSuggestions(
         },
       ];
 
+    case 'greeting': {
+      const wave = style.useEmoji ? ' 👋' : '';
+      return [
+        {
+          label: 'Casual hi back',
+          body: `Hey!${wave}`,
+          reasoning: `${baseReasoning} Match the friendly tone — no need to overthink.`,
+        },
+        {
+          label: 'Open-ended',
+          body: `Hey — what's up?`,
+          reasoning: `${baseReasoning} Invites them to say what they actually need.`,
+        },
+        {
+          label: 'Time-of-day',
+          body: `${style.formality === 'formal' ? 'Good morning' : 'Morning'}!${wave}`,
+          reasoning: `${baseReasoning} A warm acknowledgment that fits a quick "hi".`,
+        },
+      ];
+    }
+
     default: // general
       return [
         {

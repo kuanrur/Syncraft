@@ -33,7 +33,13 @@ const GENERAL: IntentResult = {
   suggestion: 'General message. No specific optimization suggested.',
 };
 
+// Word-boundary regex prevents false positives like "history" matching "hi".
+const GREETING_PATTERN = /^\s*(hi+|hey+|hello|yo+|sup|hiya|howdy|good\s*(morning|afternoon|evening)|morning|afternoon|evening|gm|gn)\b/i;
+
 export function classifyIntent(text: string): IntentResult {
+  if (GREETING_PATTERN.test(text)) {
+    return { intent: 'greeting', label: 'Greeting', suggestion: 'A greeting. A short friendly reply works.' };
+  }
   const lower = text.toLowerCase();
   for (const entry of INTENT_MAP) {
     if (entry.keywords.some(kw => lower.includes(kw))) {

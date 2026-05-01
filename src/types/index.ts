@@ -2,7 +2,7 @@
 
 export type ResponseSpeed = 'fast' | 'medium' | 'slow';
 
-export interface XiamiProfile {
+export interface SyncraftProfile {
   slackUserId: string;
   displayName: string;
   timezone: string;        // IANA, e.g. "Asia/Kolkata"
@@ -25,7 +25,7 @@ export interface AvailabilityResult {
 
 // ── Intent ──────────────────────────────────────────
 
-export type IntentType = 'eta_request' | 'clarification' | 'approval' | 'status_check' | 'general';
+export type IntentType = 'eta_request' | 'clarification' | 'approval' | 'status_check' | 'greeting' | 'general';
 
 export interface IntentResult {
   intent: IntentType;
@@ -120,7 +120,7 @@ export interface SuggestionContext {
   messageText: string;
   senderId: string;
   requesterId: string;
-  senderProfile: XiamiProfile | null;
+  senderProfile: SyncraftProfile | null;
   senderTraits: UserCommTraits | null;
   requesterTraits: UserCommTraits | null;
   pairTraits: PairCommTraits | null;

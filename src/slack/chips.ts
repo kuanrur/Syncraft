@@ -80,6 +80,16 @@ export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promis
     isUrgent,
   };
 
+  // Trivial greeting (e.g., just "hi") — skip chips, post a small note instead.
+  if (intent.intent === 'greeting' && messageText.trim().split(/\s+/).length <= 2) {
+    await respond({
+      response_type: 'ephemeral',
+      text: 'Looks like a quick greeting — feel free to reply naturally.',
+      thread_ts: threadTs ?? undefined,
+    }).catch(() => { /* ignore */ });
+    return;
+  }
+
   const suggestions = generateSuggestions(context);
 
   // Resolve display name; fall back to id on failure (likely missing users:read scope)
