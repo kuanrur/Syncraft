@@ -3,7 +3,7 @@ import { getProfile } from '../db/profileRepo';
 import { getAvailability } from '../services/availabilityService';
 import { getReplyEstimate } from '../services/replyEstimateService';
 import { classifyIntent } from '../services/intentClassifier';
-import { buildAnalysisModal } from './blocks';
+import { buildAnalysisModal, buildCopySwapBlocks, buildSuggestionChipsBlocks } from './blocks';
 import { postSuggestionChips } from './chips';
 
 function extractMessageText(message: any): string {
@@ -106,21 +106,52 @@ export function registerShortcuts(app: App): void {
     });
   });
 
-  // Copy suggestion actions
-  for (let i = 1; i <= 3; i++) {
-    app.action(`copy_suggestion_${i}`, async ({ ack, body, action, client }) => {
+  // Chip click → swap to copy-and-paste view
+  for (let i = 0; i <= 2; i++) {
+    app.action(`chip_select_${i}`, async ({ ack, action, respond }) => {
       await ack();
-      const suggestionText = (action as any).value ?? '';
-      const userId = body.user.id;
-      const channelId = (body as any).channel?.id;
-
-      if (channelId) {
-        await client.chat.postEphemeral({
-          channel: channelId,
-          user: userId,
-          text: suggestionText,
-        }).catch(err => console.warn('Copy action ephemeral failed:', err));
+      try {
+        const value = JSON.parse((action as any).value ?? '{}');
+        const fullText: string = value.fullText ?? '';
+        const cachedState: string = value.cachedState ?? '{}';
+        await respond({
+          replace_original: true,
+          text: 'Copy and paste',
+          blocks: buildCopySwapBlocks(fullText, cachedState),
+        });
+      } catch (err) {
+        console.warn('[chip_select] failed:', err);
       }
     });
   }
+
+  // Back → restore the chip view from cached state
+  app.action('chip_back', async ({ ack, action, respond }) => {
+    await ack();
+    try {
+      const cached = JSON.parse((action as any).value ?? '{}');
+      const blocks = buildSuggestionChipsBlocks(
+        cached.suggestions ?? [],
+        cached.contextLine ?? null,
+        cached.senderName ?? '',
+      );
+      await respond({
+        replace_original: true,
+        text: 'Suggested replies',
+        blocks,
+      });
+    } catch (err) {
+      console.warn('[chip_back] failed:', err);
+    }
+  });
+
+  // Dismiss → delete the ephemeral
+  app.action('chip_dismiss', async ({ ack, respond }) => {
+    await ack();
+    try {
+      await respond({ delete_original: true });
+    } catch (err) {
+      console.warn('[chip_dismiss] failed:', err);
+    }
+  });
 }
