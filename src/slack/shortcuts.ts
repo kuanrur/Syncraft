@@ -120,7 +120,7 @@ export function registerShortcuts(app: App): void {
           blocks: buildCopySwapBlocks(fullText, cachedState),
         });
       } catch (err) {
-        console.warn('[chip_select] failed:', err);
+        console.warn(`[chip_select_${i}] failed:`, err);
       }
     });
   }
