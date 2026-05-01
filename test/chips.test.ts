@@ -113,10 +113,10 @@ describe('buildSuggestionChipsBlocks', () => {
     const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
     const sections = blocks.filter((b: any) => b.type === 'section') as any[];
     assert.equal(sections.length, 2);
-    assert.equal(sections[0].text.text, 'Got it, thanks.');
+    assert.equal(sections[0].text.text, '> Got it, thanks.');
     assert.equal(sections[0].accessory.action_id, 'chip_select_0');
     assert.equal(sections[0].accessory.text.text, 'Use this');
-    assert.equal(sections[1].text.text, "Thanks — I'll follow up.");
+    assert.equal(sections[1].text.text, "> Thanks — I'll follow up.");
     assert.equal(sections[1].accessory.action_id, 'chip_select_1');
 
     const actions = blocks.find((b: any) => b.type === 'actions') as any;
@@ -153,7 +153,7 @@ describe('buildSuggestionChipsBlocks', () => {
       'Kevin',
     );
     const section = blocks.find((b: any) => b.type === 'section') as any;
-    assert.equal(section.text.text, long);
+    assert.equal(section.text.text, `> ${long}`);
     const value = JSON.parse(section.accessory.value);
     assert.equal(value.fullText, long);
   });

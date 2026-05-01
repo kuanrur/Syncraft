@@ -435,11 +435,13 @@ export function buildSuggestionChipsBlocks(
   });
 
   // One section per suggestion — full body text on the left, "Use this" button on the right.
-  // Sections accept up to 3000 chars, so suggestions are never truncated.
+  // The `>` mrkdwn prefix gives Slack's vertical left bar, framing each suggestion as a card.
+  // A divider between cards reinforces the visual separation.
   suggestions.forEach((s, i) => {
+    if (i > 0) blocks.push({ type: 'divider' });
     blocks.push({
       type: 'section',
-      text: { type: 'mrkdwn', text: s.body },
+      text: { type: 'mrkdwn', text: `> ${s.body}` },
       accessory: {
         type: 'button',
         action_id: `chip_select_${i}`,
