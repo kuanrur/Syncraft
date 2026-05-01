@@ -1,4 +1,5 @@
 import { SuggestionContext, ReplySuggestion, UserCommTraits, LengthBucket, Formality } from '../types';
+import { PAIR_FRICTION_THRESHOLD_MIN } from '../constants';
 
 export function generateSuggestions(context: SuggestionContext): ReplySuggestion[] {
   const { intent, senderTraits, requesterTraits, pairTraits, teamTraits, isUrgent } = context;
@@ -19,7 +20,7 @@ export function generateSuggestions(context: SuggestionContext): ReplySuggestion
       }
       const requesterIsA = context.requesterId <= context.senderId;
       const myResponseTime = requesterIsA ? pairTraits.avgResponseTimeAtoBMin : pairTraits.avgResponseTimeBtoAMin;
-      if (myResponseTime > 120) {
+      if (myResponseTime > PAIR_FRICTION_THRESHOLD_MIN) {
         s.reasoning += ` You usually reply to ${senderName} in 2+ hours. If this is urgent, a quick ack now helps.`;
       }
     }

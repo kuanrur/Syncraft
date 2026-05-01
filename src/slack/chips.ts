@@ -1,4 +1,5 @@
 import type { SuggestionContext, ReplySuggestion } from '../types';
+import { PAIR_FRICTION_THRESHOLD_MIN } from '../constants';
 
 export function pickContextLine(
   suggestions: ReplySuggestion[],
@@ -16,14 +17,13 @@ export function pickContextLine(
     return '⚡ Looks urgent — a quick ack now is better than a long reply later';
   }
 
-  // Rule 3: pair-friction (median reply time > 120 min in the requester→sender direction)
+  // Rule 3: pair-friction (avg reply time > PAIR_FRICTION_THRESHOLD_MIN in the requester→sender direction)
   if (context.pairTraits) {
-    const [a] = [context.requesterId, context.senderId].sort();
-    const requesterIsA = context.requesterId === a;
+    const requesterIsA = context.requesterId <= context.senderId;
     const myReplyTime = requesterIsA
       ? context.pairTraits.avgResponseTimeAtoBMin
       : context.pairTraits.avgResponseTimeBtoAMin;
-    if (myReplyTime > 120) {
+    if (myReplyTime > PAIR_FRICTION_THRESHOLD_MIN) {
       return `⏱ You usually reply to ${senderName} in 2+ hours — a fast ack helps`;
     }
   }

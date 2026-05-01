@@ -60,7 +60,7 @@ describe('pickContextLine', () => {
     assert.equal(line, '⚡ Looks urgent — a quick ack now is better than a long reply later');
   });
 
-  it('rule 3: shows pair-friction line when median reply time > 120 min', () => {
+  it('rule 3: shows pair-friction line when avg reply time > 120 min', () => {
     const pair: PairCommTraits = {
       userA: 'U_ME', userB: 'U_SENDER',
       totalInteractions: 10,
