@@ -1,12 +1,13 @@
 {
-  "name": "xiami",
+  "name": "syncraft",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "npx tsx src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "test": "node --import tsx --test test/**/*.test.ts"
   },
   "keywords": [],
   "author": "",
