@@ -1,4 +1,4 @@
-import type { KnownBlock } from '@slack/types';
+import type { KnownBlock, ActionsBlock } from '@slack/types';
 // ModalView type for Slack modal definitions
 type ModalView = {
   type: 'modal';
@@ -418,8 +418,8 @@ export function buildSuggestionChipsBlocks(
   suggestions: ReplySuggestion[],
   contextLine: string | null,
   senderName: string,
-): any[] {
-  const blocks: any[] = [];
+): KnownBlock[] {
+  const blocks: KnownBlock[] = [];
 
   if (contextLine) {
     blocks.push({
@@ -429,12 +429,12 @@ export function buildSuggestionChipsBlocks(
   }
 
   const cachedState = JSON.stringify({
-    suggestions,
+    suggestions: suggestions.map(({ label, body }) => ({ label, body })),
     contextLine,
     senderName,
   });
 
-  const chipElements = suggestions.map((s, i) => {
+  const chipElements: ActionsBlock['elements'] = suggestions.map((s, i) => {
     const fullText = s.body;
     const truncated = fullText.length > 75 ? fullText.slice(0, 74) + '…' : fullText;
     return {
@@ -450,7 +450,7 @@ export function buildSuggestionChipsBlocks(
     action_id: 'chip_dismiss',
     text: { type: 'plain_text', text: '✕ Dismiss', emoji: true },
     value: '{}',
-  } as any);
+  });
 
   blocks.push({
     type: 'actions',

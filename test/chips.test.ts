@@ -123,8 +123,8 @@ describe('buildSuggestionChipsBlocks', () => {
 
   it('omits the context section when contextLine is null', () => {
     const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
-    const sections = blocks.filter((b: any) => b.type === 'section');
-    assert.equal(sections.length, 0);
+    const contextBlocks = blocks.filter((b: any) => b.type === 'context');
+    assert.equal(contextBlocks.length, 0);
   });
 
   it('renders the context line as a context block when provided', () => {
@@ -132,6 +132,14 @@ describe('buildSuggestionChipsBlocks', () => {
     const ctx = blocks.find((b: any) => b.type === 'context') as any;
     assert.ok(ctx, 'context block exists');
     assert.match(ctx.elements[0].text, /Looks urgent/);
+  });
+
+  it('returns a single actions block with only Dismiss when suggestions is empty', () => {
+    const blocks = buildSuggestionChipsBlocks([], null, 'Kevin');
+    const actions = blocks.find((b: any) => b.type === 'actions') as any;
+    assert.ok(actions);
+    assert.equal(actions.elements.length, 1);
+    assert.equal(actions.elements[0].action_id, 'chip_dismiss');
   });
 
   it('truncates chip label > 75 chars and stores full text in value', () => {
