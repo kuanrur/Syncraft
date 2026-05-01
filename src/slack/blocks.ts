@@ -8,12 +8,12 @@ type ModalView = {
   close?: { type: 'plain_text'; text: string; emoji?: boolean };
   blocks: KnownBlock[];
 };
-import { XiamiProfile, AvailabilityResult, UserCommTraits, IntentResult, ReplySuggestion } from '../types';
+import { SyncraftProfile, AvailabilityResult, UserCommTraits, IntentResult, ReplySuggestion } from '../types';
 
 // ── Availability Blocks ──────────────────────────────────────────────────────
 
 export function buildAvailabilityBlocks(
-  profile: XiamiProfile,
+  profile: SyncraftProfile,
   availability: AvailabilityResult,
   replyEstimate: string,
   traits?: UserCommTraits | null,
@@ -78,7 +78,7 @@ export function buildAvailabilityBlocks(
   return blocks;
 }
 
-function buildTip(profile: XiamiProfile, availability: AvailabilityResult): string {
+function buildTip(profile: SyncraftProfile, availability: AvailabilityResult): string {
   switch (availability.status) {
     case 'likely_asleep':
       return `Consider sending during their work hours (${profile.workStart} – ${profile.workEnd} ${profile.timezone}).`;
@@ -92,7 +92,7 @@ function buildTip(profile: XiamiProfile, availability: AvailabilityResult): stri
 // ── App Home Blocks ──────────────────────────────────────────────────────────
 
 export function buildAppHomeBlocks(
-  profile: XiamiProfile | null,
+  profile: SyncraftProfile | null,
   selfAvailability?: AvailabilityResult,
   selfReplyEstimate?: string,
   traits?: UserCommTraits | null,
@@ -100,14 +100,14 @@ export function buildAppHomeBlocks(
   const blocks: KnownBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: '👋 Welcome to Xiami', emoji: true },
+      text: { type: 'plain_text', text: '👋 Welcome to Syncraft', emoji: true },
     },
   ];
 
   if (!profile) {
     blocks.push({
       type: 'section',
-      text: { type: 'mrkdwn', text: "Xiami helps you communicate better with your teammates. Set up your profile to get started." },
+      text: { type: 'mrkdwn', text: "Syncraft helps you communicate better with your teammates. Set up your profile to get started." },
     });
     blocks.push({
       type: 'actions',
@@ -203,7 +203,7 @@ export function buildAppHomeBlocks(
     type: 'context',
     elements: [{
       type: 'mrkdwn',
-      text: 'ℹ️ Xiami only observes public channels. No message text is stored — only patterns like length and timing.',
+      text: 'ℹ️ Syncraft only observes public channels. No message text is stored — only patterns like length and timing.',
     }],
   });
 
@@ -254,7 +254,7 @@ const TIMEZONE_OPTIONS = [
   'Australia/Sydney', 'Pacific/Auckland',
 ];
 
-export function buildEditProfileModal(existingProfile?: XiamiProfile | null): ModalView {
+export function buildEditProfileModal(existingProfile?: SyncraftProfile | null): ModalView {
   return {
     type: 'modal',
     callback_id: 'edit_profile_submit',
@@ -360,7 +360,7 @@ export function buildEditProfileModal(existingProfile?: XiamiProfile | null): Mo
 export function buildAnalysisModal(
   messageText: string,
   intent: IntentResult,
-  targetProfile?: XiamiProfile | null,
+  targetProfile?: SyncraftProfile | null,
   availability?: AvailabilityResult,
   replyEstimate?: string,
 ): ModalView {
@@ -400,16 +400,64 @@ export function buildAnalysisModal(
     blocks.push({ type: 'divider' });
     blocks.push({
       type: 'context',
-      elements: [{ type: 'mrkdwn', text: 'No Xiami profile found for the message author.' }],
+      elements: [{ type: 'mrkdwn', text: 'No Syncraft profile found for the message author.' }],
     });
   }
 
   return {
     type: 'modal',
-    title: { type: 'plain_text', text: 'Xiami — Message Analysis', emoji: true },
+    title: { type: 'plain_text', text: 'Message Analysis', emoji: true },
     close: { type: 'plain_text', text: 'Close', emoji: true },
     blocks,
   };
+}
+
+// ── Suggestion Chips Blocks ───────────────────────────────────────────────────
+
+export function buildSuggestionChipsBlocks(
+  suggestions: ReplySuggestion[],
+  contextLine: string | null,
+  senderName: string,
+): any[] {
+  const blocks: any[] = [];
+
+  if (contextLine) {
+    blocks.push({
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: contextLine }],
+    });
+  }
+
+  const cachedState = JSON.stringify({
+    suggestions,
+    contextLine,
+    senderName,
+  });
+
+  const chipElements = suggestions.map((s, i) => {
+    const fullText = s.body;
+    const truncated = fullText.length > 75 ? fullText.slice(0, 74) + '…' : fullText;
+    return {
+      type: 'button',
+      action_id: `chip_select_${i}`,
+      text: { type: 'plain_text', text: truncated, emoji: true },
+      value: JSON.stringify({ fullText, cachedState }),
+    };
+  });
+
+  chipElements.push({
+    type: 'button',
+    action_id: 'chip_dismiss',
+    text: { type: 'plain_text', text: '✕ Dismiss', emoji: true },
+    value: '{}',
+  } as any);
+
+  blocks.push({
+    type: 'actions',
+    elements: chipElements,
+  });
+
+  return blocks;
 }
 
 // ── Suggestion Modal ──────────────────────────────────────────────────────────
@@ -458,7 +506,7 @@ export function buildSuggestionModal(
 
   return {
     type: 'modal',
-    title: { type: 'plain_text', text: '💬 Xiami — Suggested Replies', emoji: true },
+    title: { type: 'plain_text', text: 'Suggested Replies', emoji: true },
     close: { type: 'plain_text', text: 'Close', emoji: true },
     blocks,
   };

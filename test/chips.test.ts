@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickContextLine } from '../src/slack/chips';
+import { buildSuggestionChipsBlocks } from '../src/slack/blocks';
 import type { SuggestionContext, ReplySuggestion, UserCommTraits, PairCommTraits } from '../src/types';
 
 const baseTraits: UserCommTraits = {
@@ -99,5 +100,52 @@ describe('pickContextLine', () => {
     });
     const line = pickContextLine(dummySuggestions, ctx, 'Kevin');
     assert.equal(line, '💡 Kevin has said: "short replies please"');
+  });
+});
+
+describe('buildSuggestionChipsBlocks', () => {
+  const suggestions: ReplySuggestion[] = [
+    { label: 'Acknowledge', body: 'Got it, thanks.', reasoning: '' },
+    { label: 'Acknowledge + next step', body: "Thanks — I'll follow up.", reasoning: '' },
+  ];
+
+  it('renders a chip per suggestion plus a Dismiss button', () => {
+    const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
+    const actions = blocks.find((b: any) => b.type === 'actions') as any;
+    assert.ok(actions, 'actions block exists');
+    // 2 chip buttons + 1 dismiss button
+    assert.equal(actions.elements.length, 3);
+    assert.equal(actions.elements[0].action_id, 'chip_select_0');
+    assert.equal(actions.elements[0].text.text, 'Got it, thanks.');
+    assert.equal(actions.elements[1].action_id, 'chip_select_1');
+    assert.equal(actions.elements[2].action_id, 'chip_dismiss');
+  });
+
+  it('omits the context section when contextLine is null', () => {
+    const blocks = buildSuggestionChipsBlocks(suggestions, null, 'Kevin');
+    const sections = blocks.filter((b: any) => b.type === 'section');
+    assert.equal(sections.length, 0);
+  });
+
+  it('renders the context line as a context block when provided', () => {
+    const blocks = buildSuggestionChipsBlocks(suggestions, '⚡ Looks urgent', 'Kevin');
+    const ctx = blocks.find((b: any) => b.type === 'context') as any;
+    assert.ok(ctx, 'context block exists');
+    assert.match(ctx.elements[0].text, /Looks urgent/);
+  });
+
+  it('truncates chip label > 75 chars and stores full text in value', () => {
+    const long = 'x'.repeat(120);
+    const blocks = buildSuggestionChipsBlocks(
+      [{ label: 'Long', body: long, reasoning: '' }],
+      null,
+      'Kevin',
+    );
+    const actions = blocks.find((b: any) => b.type === 'actions') as any;
+    const chip = actions.elements[0];
+    assert.ok(chip.text.text.length <= 75, `label is ${chip.text.text.length} chars`);
+    assert.ok(chip.text.text.endsWith('…'));
+    const value = JSON.parse(chip.value);
+    assert.equal(value.fullText, long);
   });
 });
