@@ -34,17 +34,35 @@ const GENERAL: IntentResult = {
 };
 
 // Word-boundary regex prevents false positives like "history" matching "hi".
-const GREETING_PATTERN = /^\s*(hi+|hey+|hello|yo+|sup|hiya|howdy|good\s*(morning|afternoon|evening)|morning|afternoon|evening|gm|gn)\b/i;
+// The trailing class swallows punctuation/whitespace right after the greeting word.
+const GREETING_PATTERN = /^\s*(hi+|hey+|hello|yo+|sup|hiya|howdy|good\s*(morning|afternoon|evening)|morning|afternoon|evening|gm|gn)\b[\s,!.—-]*/i;
 
-export function classifyIntent(text: string): IntentResult {
-  if (GREETING_PATTERN.test(text)) {
-    return { intent: 'greeting', label: 'Greeting', suggestion: 'A greeting. A short friendly reply works.' };
-  }
+function matchKeywordIntent(text: string): IntentResult | null {
   const lower = text.toLowerCase();
   for (const entry of INTENT_MAP) {
     if (entry.keywords.some(kw => lower.includes(kw))) {
       return { intent: entry.intent, label: entry.label, suggestion: entry.suggestion };
     }
   }
-  return GENERAL;
+  return null;
+}
+
+export function classifyIntent(text: string): IntentResult {
+  const greetingMatch = text.match(GREETING_PATTERN);
+  if (greetingMatch) {
+    const remainder = text.slice(greetingMatch[0].length).trim();
+    const remainderWordCount = remainder ? remainder.split(/\s+/).length : 0;
+
+    // Greeting only — or greeting + short addressee like "Hi people".
+    if (remainderWordCount <= 3) {
+      return { intent: 'greeting', label: 'Greeting', suggestion: 'A greeting. A short friendly reply works.' };
+    }
+
+    // Greeting prefix followed by substantive content — classify by the remainder
+    // so "Hey, can we ship by Friday?" routes to eta_request rather than greeting.
+    const remainderIntent = matchKeywordIntent(remainder);
+    if (remainderIntent) return remainderIntent;
+  }
+
+  return matchKeywordIntent(text) ?? GENERAL;
 }
