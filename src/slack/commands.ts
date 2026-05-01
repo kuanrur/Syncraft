@@ -126,6 +126,7 @@ export function registerCommand(app: App): void {
 
       await postSuggestionChips({
         client,
+        respond,
         channelId: command.channel_id,
         threadTs,
         requesterId: command.user_id,

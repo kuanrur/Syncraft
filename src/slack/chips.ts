@@ -46,6 +46,8 @@ const URGENCY_KEYWORDS = ['asap', 'urgent', 'blocking', 'eod', 'critical', 'imme
 
 export interface PostSuggestionChipsArgs {
   client: WebClient;
+  /** Bolt's `respond` function — POSTs to the interaction's response_url. Works without bot channel membership. */
+  respond: (msg: any) => Promise<unknown>;
   channelId: string;
   threadTs?: string | null;
   requesterId: string;
@@ -54,12 +56,7 @@ export interface PostSuggestionChipsArgs {
 }
 
 export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promise<void> {
-  const { client, channelId, threadTs, requesterId, senderId, messageText } = args;
-
-  if (!channelId) {
-    console.warn('[postSuggestionChips] missing channelId, skipping');
-    return;
-  }
+  const { client, respond, threadTs, senderId, requesterId, messageText } = args;
 
   const isUrgent = URGENCY_KEYWORDS.some(kw => messageText.toLowerCase().includes(kw));
   const intent = classifyIntent(messageText);
@@ -99,20 +96,17 @@ export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promis
   const blocks = buildSuggestionChipsBlocks(suggestions, contextLine, senderName);
 
   try {
-    await client.chat.postEphemeral({
-      channel: channelId,
-      user: requesterId,
-      thread_ts: threadTs ?? undefined,
+    await respond({
+      response_type: 'ephemeral',
       text: 'Suggested replies',
       blocks,
+      thread_ts: threadTs ?? undefined,
     });
   } catch (err) {
-    console.warn('[postSuggestionChips] postEphemeral failed:', err);
-    // Best-effort surface to user
+    console.warn('[postSuggestionChips] respond failed:', err);
     try {
-      await client.chat.postEphemeral({
-        channel: channelId,
-        user: requesterId,
+      await respond({
+        response_type: 'ephemeral',
         text: "Couldn't post suggestions right now — please try again.",
       });
     } catch {

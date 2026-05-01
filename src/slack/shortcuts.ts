@@ -72,7 +72,7 @@ export function registerShortcuts(app: App): void {
   });
 
   // "Suggest Reply with Syncraft"
-  app.shortcut('suggest_reply', async ({ shortcut, ack, client }) => {
+  app.shortcut('suggest_reply', async ({ shortcut, ack, client, respond }) => {
     await ack();
 
     const message = (shortcut as any).message;
@@ -84,20 +84,17 @@ export function registerShortcuts(app: App): void {
 
     if (!messageText) {
       console.log('[suggest_reply] empty text, payload:', JSON.stringify(message));
-      // No content to suggest from — post a small ephemeral note instead of a modal
-      if (channelId) {
-        await client.chat.postEphemeral({
-          channel: channelId,
-          user: requesterId,
-          thread_ts: threadTs ?? undefined,
-          text: 'No message text found to suggest replies for.',
-        }).catch(() => { /* ignore */ });
-      }
+      await respond({
+        response_type: 'ephemeral',
+        text: 'No message text found to suggest replies for.',
+        thread_ts: threadTs ?? undefined,
+      }).catch(() => { /* ignore */ });
       return;
     }
 
     await postSuggestionChips({
       client,
+      respond,
       channelId,
       threadTs,
       requesterId,
