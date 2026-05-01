@@ -105,7 +105,7 @@ src/slack/commands.ts
 
 src/slack/blocks.ts
   - add buildSuggestionChipsBlocks(suggestions, contextLine?, senderName)
-  - add buildCopySwapBlocks(chosenText, suggestionsPayload, senderName)
+  - add buildCopySwapBlocks(chosenText, cachedState)
   - delete buildSuggestionModal() (now unused)
 
 src/slack/chips.ts  [new file]

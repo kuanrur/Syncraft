@@ -182,4 +182,15 @@ describe('buildCopySwapBlocks', () => {
     const back = actions.elements.find((e: any) => e.action_id === 'chip_back');
     assert.equal(back.value, cached);
   });
+
+  it('strips triple-backtick runs from chosenText so the code fence is not broken', () => {
+    const blocks = buildCopySwapBlocks('plain ``` injection ``` here', '{}');
+    const sectionWithCode = blocks.find(
+      (b: any) => b.type === 'section' && typeof b.text?.text === 'string' && b.text.text.includes('```\n'),
+    ) as any;
+    assert.ok(sectionWithCode);
+    // The injection backticks were stripped — only the outer fence remains
+    const fenceCount = (sectionWithCode.text.text.match(/```/g) ?? []).length;
+    assert.equal(fenceCount, 2, 'expected exactly the opening and closing fences');
+  });
 });

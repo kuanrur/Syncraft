@@ -462,10 +462,12 @@ export function buildSuggestionChipsBlocks(
 
 // ── Copy-Swap Blocks ──────────────────────────────────────────────────────────
 
+/** Renders the post-click copy view. Triple-backtick runs in `chosenText` are stripped to keep the Slack code fence intact. */
 export function buildCopySwapBlocks(
   chosenText: string,
   cachedState: string,
 ): KnownBlock[] {
+  const safeText = chosenText.replace(/`{3,}/g, '');
   return [
     {
       type: 'section',
@@ -473,7 +475,7 @@ export function buildCopySwapBlocks(
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: '```\n' + chosenText + '\n```' },
+      text: { type: 'mrkdwn', text: '```\n' + safeText + '\n```' },
     },
     {
       type: 'actions',
