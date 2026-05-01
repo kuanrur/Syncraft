@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickContextLine } from '../src/slack/chips';
-import { buildSuggestionChipsBlocks } from '../src/slack/blocks';
+import { buildSuggestionChipsBlocks, buildCopySwapBlocks } from '../src/slack/blocks';
 import type { SuggestionContext, ReplySuggestion, UserCommTraits, PairCommTraits } from '../src/types';
 
 const baseTraits: UserCommTraits = {
@@ -155,5 +155,31 @@ describe('buildSuggestionChipsBlocks', () => {
     assert.ok(chip.text.text.endsWith('…'));
     const value = JSON.parse(chip.value);
     assert.equal(value.fullText, long);
+  });
+});
+
+describe('buildCopySwapBlocks', () => {
+  it('renders the chosen text in a fenced code block', () => {
+    const blocks = buildCopySwapBlocks('Got it, thanks.', '{"cachedState":"x"}');
+    const sectionWithCode = blocks.find(
+      (b: any) => b.type === 'section' && typeof b.text?.text === 'string' && b.text.text.includes('```'),
+    ) as any;
+    assert.ok(sectionWithCode, 'a section block containing a code fence exists');
+    assert.match(sectionWithCode.text.text, /```\nGot it, thanks\.\n```/);
+  });
+
+  it('renders Back and Dismiss buttons', () => {
+    const blocks = buildCopySwapBlocks('Got it, thanks.', '{"cachedState":"x"}');
+    const actions = blocks.find((b: any) => b.type === 'actions') as any;
+    const ids = actions.elements.map((e: any) => e.action_id);
+    assert.deepEqual(ids, ['chip_back', 'chip_dismiss']);
+  });
+
+  it('back button carries the cached state in value', () => {
+    const cached = JSON.stringify({ suggestions: [], contextLine: null, senderName: 'Kevin' });
+    const blocks = buildCopySwapBlocks('Got it, thanks.', cached);
+    const actions = blocks.find((b: any) => b.type === 'actions') as any;
+    const back = actions.elements.find((e: any) => e.action_id === 'chip_back');
+    assert.equal(back.value, cached);
   });
 });

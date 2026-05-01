@@ -460,6 +460,41 @@ export function buildSuggestionChipsBlocks(
   return blocks;
 }
 
+// ── Copy-Swap Blocks ──────────────────────────────────────────────────────────
+
+export function buildCopySwapBlocks(
+  chosenText: string,
+  cachedState: string,
+): KnownBlock[] {
+  return [
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: '📋 *Copy and paste:*' },
+    },
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: '```\n' + chosenText + '\n```' },
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          action_id: 'chip_back',
+          text: { type: 'plain_text', text: '← Back to suggestions', emoji: true },
+          value: cachedState,
+        },
+        {
+          type: 'button',
+          action_id: 'chip_dismiss',
+          text: { type: 'plain_text', text: '✕ Dismiss', emoji: true },
+          value: '{}',
+        },
+      ],
+    },
+  ];
+}
+
 // ── Suggestion Modal ──────────────────────────────────────────────────────────
 
 export function buildSuggestionModal(
