@@ -56,7 +56,8 @@ export interface PostSuggestionChipsArgs {
 }
 
 export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promise<void> {
-  const { client, respond, threadTs, senderId, requesterId, messageText } = args;
+  const { client, respond, channelId, threadTs, senderId, requesterId, messageText } = args;
+  console.log('[postSuggestionChips] entered', { channelId, threadTs, senderId, requesterId, textLen: messageText.length });
 
   const isUrgent = URGENCY_KEYWORDS.some(kw => messageText.toLowerCase().includes(kw));
   const intent = classifyIntent(messageText);
@@ -105,22 +106,50 @@ export async function postSuggestionChips(args: PostSuggestionChipsArgs): Promis
   const contextLine = pickContextLine(suggestions, context, senderName);
   const blocks = buildSuggestionChipsBlocks(suggestions, contextLine, senderName);
 
-  try {
-    await respond({
-      response_type: 'ephemeral',
-      text: 'Suggested replies',
-      blocks,
-      thread_ts: threadTs ?? undefined,
-    });
-  } catch (err) {
-    console.warn('[postSuggestionChips] respond failed:', err);
+  // Posting strategy:
+  //   1. If we have a thread_ts, try chat.postEphemeral first — only this routes
+  //      the ephemeral INTO the thread. response_url alone often lands in the
+  //      channel root and the user (looking at the thread) sees nothing.
+  //   2. If chat.postEphemeral fails because the bot isn't in the channel
+  //      (or any other reason), fall back to respond() so the user at least
+  //      sees the suggestions in the channel main view.
+  let posted = false;
+  if (channelId && threadTs) {
+    try {
+      await client.chat.postEphemeral({
+        channel: channelId,
+        user: requesterId,
+        thread_ts: threadTs,
+        text: 'Suggested replies',
+        blocks,
+      });
+      posted = true;
+    } catch (err: any) {
+      if (err?.data?.error === 'not_in_channel') {
+        console.warn('[postSuggestionChips] bot not in channel — falling back to response_url (ephemeral will land in channel root, not thread). /invite @Syncraft to fix.');
+      } else {
+        console.warn('[postSuggestionChips] chat.postEphemeral failed, falling back to respond:', err);
+      }
+    }
+  }
+
+  if (!posted) {
     try {
       await respond({
         response_type: 'ephemeral',
-        text: "Couldn't post suggestions right now — please try again.",
+        text: 'Suggested replies',
+        blocks,
       });
-    } catch {
-      // give up silently — already logged
+    } catch (err) {
+      console.warn('[postSuggestionChips] respond failed:', err);
+      try {
+        await respond({
+          response_type: 'ephemeral',
+          text: "Couldn't post suggestions right now — please try again.",
+        });
+      } catch {
+        // give up silently — already logged
+      }
     }
   }
 }
