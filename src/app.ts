@@ -23,5 +23,5 @@ registerObserver(app);
 
 (async () => {
   await app.start();
-  console.log('⚡ Xiami is running');
+  console.log('⚡ Syncraft is running');
 })();

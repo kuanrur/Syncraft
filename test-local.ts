@@ -12,14 +12,14 @@ import { analyzeMessage } from './src/services/messageAnalyzer';
 import { insertObservation } from './src/db/observationRepo';
 import { aggregateUserTraits } from './src/services/traitAggregator';
 import { getUserTraits } from './src/db/commTraitsRepo';
-import { XiamiProfile } from './src/types';
+import { SyncraftProfile } from './src/types';
 
-console.log('\n====== XIAMI LOCAL TEST ======\n');
+console.log('\n====== SYNCRAFT LOCAL TEST ======\n');
 
 initDb();
 
 // 1. Create a test profile
-const profile: XiamiProfile = {
+const profile: SyncraftProfile = {
   slackUserId: 'U_TEST_001',
   displayName: 'Test User',
   timezone: 'America/New_York',

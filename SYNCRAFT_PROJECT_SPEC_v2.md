@@ -1,4 +1,4 @@
-# XIAMI — Project Spec v2.0
+# SYNCRAFT — Project Spec v2.0
 
 > **Audience**: Coding agent (Claude, Cursor, etc.)
 > **Objective**: Build a working Slack prototype in a single session.
@@ -6,9 +6,9 @@
 
 ---
 
-## 0. What Is Xiami
+## 0. What Is Syncraft
 
-Xiami is a personal communication assistant for remote teams, deployed as a Slack app.
+Syncraft is a personal communication assistant for remote teams, deployed as a Slack app.
 It answers two questions:
 
 1. **"What's the best way and time to reach this person?"**
@@ -17,7 +17,7 @@ It answers two questions:
 2. **"Given what I know about this person and this team, how should I reply?"**
    → Learned communication patterns: observed passively from public channel messages, stored as derived traits (never raw text), used to generate contextual reply suggestions.
 
-Xiami observes passively and surfaces actively. It only speaks when invoked.
+Syncraft observes passively and surfaces actively. It only speaks when invoked.
 
 ---
 
@@ -27,8 +27,8 @@ Xiami observes passively and surfaces actively. It only speaks when invoked.
 
 - Single Slack workspace
 - Socket Mode (local dev, no public URL needed)
-- Slash command: `/xiami @user` and `/xiami reply`
-- Message shortcuts: "Analyze with Xiami" + "Suggest Reply with Xiami"
+- Slash command: `/syncraft @user` and `/syncraft reply`
+- Message shortcuts: "Analyze with Syncraft" + "Suggest Reply with Syncraft"
 - App Home: view/edit profile + view learned communication style + privacy controls
 - Modal: edit profile fields
 - SQLite storage (single file, no server)
@@ -81,9 +81,9 @@ The developer must create a Slack app at https://api.slack.com/apps before runni
 | Socket Mode                | **Enabled**                                                 |
 | App-Level Token            | Generate with scope `connections:write`                     |
 | Bot Token Scopes           | `commands`, `chat:write`, `users:read`, `channels:history`, `channels:read` |
-| Slash Command              | `/xiami` — Description: "Check availability or get reply suggestions" |
-| Message Shortcut #1        | callback_id: `analyze_message` — Name: "Analyze with Xiami" |
-| Message Shortcut #2        | callback_id: `suggest_reply` — Name: "Suggest Reply with Xiami" |
+| Slash Command              | `/syncraft` — Description: "Check availability or get reply suggestions" |
+| Message Shortcut #1        | callback_id: `analyze_message` — Name: "Analyze with Syncraft" |
+| Message Shortcut #2        | callback_id: `suggest_reply` — Name: "Suggest Reply with Syncraft" |
 | App Home → Home Tab        | **Enabled**                                                 |
 | Event Subscriptions        | `app_home_opened`, `message.channels`                       |
 
@@ -103,7 +103,7 @@ SLACK_SIGNING_SECRET=...
 ## 4. Directory Structure
 
 ```
-xiami/
+syncraft/
 ├── src/
 │   ├── app.ts                        # Entry point: init Bolt, register all handlers, start
 │   ├── config.ts                     # Load env vars, export typed config
@@ -122,7 +122,7 @@ xiami/
 │   │   ├── meetingDetector.ts        # Classify meeting patterns
 │   │   └── replySuggestionService.ts # Core template-based suggestion engine
 │   ├── slack/
-│   │   ├── commands.ts               # /xiami @user + /xiami reply handlers
+│   │   ├── commands.ts               # /syncraft @user + /syncraft reply handlers
 │   │   ├── shortcuts.ts              # analyze_message + suggest_reply handlers
 │   │   ├── observer.ts               # Passive message listener (public channels)
 │   │   ├── appHome.ts                # app_home_opened event handler
@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS team_comm_traits (
 
 type ResponseSpeed = 'fast' | 'medium' | 'slow';
 
-interface XiamiProfile {
+interface SyncraftProfile {
   slackUserId: string;
   displayName: string;
   timezone: string;        // IANA, e.g. "Asia/Kolkata"
@@ -388,7 +388,7 @@ interface SuggestionContext {
   messageText: string;
   senderId: string;
   requesterId: string;
-  senderProfile: XiamiProfile | null;
+  senderProfile: SyncraftProfile | null;
   senderTraits: UserCommTraits | null;
   requesterTraits: UserCommTraits | null;
   pairTraits: PairCommTraits | null;
@@ -406,7 +406,7 @@ interface SuggestionContext {
 
 **File**: `src/services/availabilityService.ts`
 
-**Input**: `XiamiProfile`
+**Input**: `SyncraftProfile`
 **Output**: `AvailabilityResult`
 
 **Logic**:
@@ -447,7 +447,7 @@ function isInWrappingRange(current: number, start: number, end: number): boolean
 
 **File**: `src/services/replyEstimateService.ts`
 
-**Input**: `AvailabilityResult['status']`, `XiamiProfile['responseSpeed']`
+**Input**: `AvailabilityResult['status']`, `SyncraftProfile['responseSpeed']`
 **Output**: `string`
 
 | Status              | Speed  | Estimate         |
@@ -744,11 +744,11 @@ If no team data:
 
 ## 8. Slack Handlers
 
-### 8A. Slash Command: `/xiami`
+### 8A. Slash Command: `/syncraft`
 
 **File**: `src/slack/commands.ts`
 
-**Registration**: `app.command('/xiami', handler)`
+**Registration**: `app.command('/syncraft', handler)`
 
 **Behavior — route by argument**:
 
@@ -757,7 +757,7 @@ Parse command.text:
 
 Case 1: text matches /<@(U[A-Z0-9]+)(?:\|[^>]*)?>/  → LOOKUP mode
   1. Extract target user ID
-  2. Load profile. If none → "No Xiami profile found for this user yet."
+  2. Load profile. If none → "No Syncraft profile found for this user yet."
   3. If sharing disabled → "This user has chosen not to share their availability."
   4. Compute availability + reply estimate
   5. Load user comm traits (if available)
@@ -765,13 +765,13 @@ Case 1: text matches /<@(U[A-Z0-9]+)(?:\|[^>]*)?>/  → LOOKUP mode
 
 Case 2: text starts with "reply"  → SUGGEST mode
   1. Must be invoked in a thread (check if thread_ts exists in command payload)
-  2. If not in thread → "Use `/xiami reply` inside a thread to get suggestions."
+  2. If not in thread → "Use `/syncraft reply` inside a thread to get suggestions."
   3. Fetch the parent message of the thread
   4. Run full suggestion flow (see §7H)
   5. Open a modal with suggestions
 
 Case 3: no argument or unrecognized → HELP
-  Respond ephemeral: "Usage:\n• `/xiami @someone` — Check availability\n• `/xiami reply` — Get reply suggestions (use in a thread)"
+  Respond ephemeral: "Usage:\n• `/syncraft @someone` — Check availability\n• `/syncraft reply` — Get reply suggestions (use in a thread)"
 ```
 
 **Lookup response blocks** (ephemeral):
@@ -804,7 +804,7 @@ Case 3: no argument or unrecognized → HELP
 | outside_work_hours  | "They're outside work hours but may check messages occasionally."  |
 | available           | "They're in work hours. Good time to reach out."                   |
 
-### 8B. Message Shortcut: "Analyze with Xiami"
+### 8B. Message Shortcut: "Analyze with Syncraft"
 
 **File**: `src/slack/shortcuts.ts`
 
@@ -824,7 +824,7 @@ Case 3: no argument or unrecognized → HELP
 
 ```
 ┌─────────────────────────────────────────┐
-│ Xiami — Message Analysis                │  ← Modal title
+│ Syncraft — Message Analysis                │  ← Modal title
 ├─────────────────────────────────────────┤
 │ 📝 Message Preview                      │
 │ "[truncated message, max 200ch]"        │
@@ -842,9 +842,9 @@ Case 3: no argument or unrecognized → HELP
 └─────────────────────────────────────────┘
 ```
 
-If no target profile: omit Recipient Context, show "No Xiami profile found for the message author."
+If no target profile: omit Recipient Context, show "No Syncraft profile found for the message author."
 
-### 8C. Message Shortcut: "Suggest Reply with Xiami"
+### 8C. Message Shortcut: "Suggest Reply with Syncraft"
 
 **File**: `src/slack/shortcuts.ts`
 
@@ -867,7 +867,7 @@ If no target profile: omit Recipient Context, show "No Xiami profile found for t
 
 ```
 ┌──────────────────────────────────────────────┐
-│ 💬 Xiami — Suggested Replies                 │
+│ 💬 Syncraft — Suggested Replies                 │
 ├──────────────────────────────────────────────┤
 │ 📝 Replying to:                              │
 │ "[truncated message, 150ch max]"             │
@@ -953,7 +953,7 @@ or `setImmediate`. Do NOT await in the message handler path — Slack requires f
 
 ```
 ┌──────────────────────────────────────────┐
-│ 👋 Welcome to Xiami                      │
+│ 👋 Welcome to Syncraft                      │
 ├──────────────────────────────────────────┤
 │ Your Profile                             │
 │ Timezone: Asia/Kolkata                   │
@@ -989,7 +989,7 @@ or `setImmediate`. Do NOT await in the message handler path — Slack requires f
 │                                          │
 │ [ 🔄 Refresh Traits ] [ 🗑️ Clear My Data ] │
 ├──────────────────────────────────────────┤
-│ ℹ️ Xiami only observes public channels.  │
+│ ℹ️ Syncraft only observes public channels.  │
 │ No message text is stored — only         │
 │ patterns like length and timing.         │
 └──────────────────────────────────────────┘
@@ -1067,10 +1067,10 @@ Australia/Sydney, Pacific/Auckland
 Export pure functions. No side effects. Return Block Kit JSON arrays.
 
 ```typescript
-function buildAvailabilityBlocks(profile: XiamiProfile, availability: AvailabilityResult, replyEstimate: string, traits?: UserCommTraits): KnownBlock[];
-function buildAppHomeBlocks(profile: XiamiProfile | null, selfAvailability?: AvailabilityResult, selfReplyEstimate?: string, traits?: UserCommTraits): KnownBlock[];
-function buildEditProfileModal(existingProfile?: XiamiProfile): ModalView;
-function buildAnalysisModal(messageText: string, intent: IntentResult, targetProfile?: XiamiProfile, availability?: AvailabilityResult, replyEstimate?: string): ModalView;
+function buildAvailabilityBlocks(profile: SyncraftProfile, availability: AvailabilityResult, replyEstimate: string, traits?: UserCommTraits): KnownBlock[];
+function buildAppHomeBlocks(profile: SyncraftProfile | null, selfAvailability?: AvailabilityResult, selfReplyEstimate?: string, traits?: UserCommTraits): KnownBlock[];
+function buildEditProfileModal(existingProfile?: SyncraftProfile): ModalView;
+function buildAnalysisModal(messageText: string, intent: IntentResult, targetProfile?: SyncraftProfile, availability?: AvailabilityResult, replyEstimate?: string): ModalView;
 function buildSuggestionModal(messageText: string, senderName: string, suggestions: ReplySuggestion[], contextSummary: string[]): ModalView;
 function buildTraitDisplayBlocks(traits: UserCommTraits): KnownBlock[];
 ```
@@ -1120,7 +1120,7 @@ const app = new App({
 });
 
 initDb();                  // Creates all tables, runs cleanup
-registerCommand(app);      // /xiami @user, /xiami reply
+registerCommand(app);      // /syncraft @user, /syncraft reply
 registerShortcuts(app);    // analyze_message, suggest_reply
 registerAppHome(app);      // app_home_opened
 registerModals(app);       // modal open + submit + privacy actions
@@ -1128,7 +1128,7 @@ registerObserver(app);     // passive message listener
 
 (async () => {
   await app.start();
-  console.log('⚡ Xiami is running');
+  console.log('⚡ Syncraft is running');
 })();
 ```
 
@@ -1144,7 +1144,7 @@ registerObserver(app);     // passive message listener
 6. **Status emoji mapping**: available → ✅, outside_work_hours → 🌙, likely_asleep → 💤
 7. **Tone**: Calm, professional, helpful. Like a considerate teammate.
 8. **Trait language**: Say "communication style" not "behavior profile". Say "observed patterns" not "tracking data". Say "noted preferences" not "captured statements".
-9. **Privacy footer**: Always include the privacy note on App Home: "Xiami only observes public channels. No message text is stored — only patterns like length and timing."
+9. **Privacy footer**: Always include the privacy note on App Home: "Syncraft only observes public channels. No message text is stored — only patterns like length and timing."
 
 ---
 
@@ -1152,14 +1152,14 @@ registerObserver(app);     // passive message listener
 
 | Scenario                              | Response                                                     |
 |---------------------------------------|--------------------------------------------------------------|
-| No user mentioned in `/xiami`         | Usage hint with both commands                                |
+| No user mentioned in `/syncraft`         | Usage hint with both commands                                |
 | User not found in workspace           | "Couldn't find that user in this workspace."                  |
-| No profile for target user            | "No Xiami profile found for this user yet."                   |
+| No profile for target user            | "No Syncraft profile found for this user yet."                   |
 | Sharing disabled                      | "This user has chosen not to share their availability."       |
 | Invalid timezone in profile           | Fall back to UTC, log warning                                 |
 | DB error                              | Log error, respond: "Something went wrong. Try again shortly."|
 | Shortcut message text empty           | "No message text found to analyze."                           |
-| `/xiami reply` outside a thread       | "Use `/xiami reply` inside a thread to get suggestions."      |
+| `/syncraft reply` outside a thread       | "Use `/syncraft reply` inside a thread to get suggestions."      |
 | Suggest reply, < 10 sender observations | Show suggestions based on intent only, note "Still learning..." |
 | Observer fails on a message           | Log warning silently, do not surface errors to any user        |
 
@@ -1191,10 +1191,10 @@ registerObserver(app);     // passive message listener
 The agent should generate a README.md covering:
 
 ```markdown
-# Xiami — Slack Communication Assistant (Prototype)
+# Syncraft — Slack Communication Assistant (Prototype)
 
 ## What It Does
-Xiami helps remote teammates communicate more effectively by surfacing availability
+Syncraft helps remote teammates communicate more effectively by surfacing availability
 context and learned communication preferences. It suggests replies tailored to how
 each person prefers to communicate.
 
@@ -1209,10 +1209,10 @@ each person prefers to communicate.
 3. OAuth & Permissions → add Bot Token Scopes:
    `commands`, `chat:write`, `users:read`, `channels:history`, `channels:read`
 4. Install to workspace → copy Bot Token
-5. Create slash command: `/xiami`
+5. Create slash command: `/syncraft`
 6. Create message shortcuts:
-   - callback_id: `analyze_message`, name: "Analyze with Xiami"
-   - callback_id: `suggest_reply`, name: "Suggest Reply with Xiami"
+   - callback_id: `analyze_message`, name: "Analyze with Syncraft"
+   - callback_id: `suggest_reply`, name: "Suggest Reply with Syncraft"
 7. Enable App Home → Home Tab
 8. Subscribe to bot events: `app_home_opened`, `message.channels`
 9. Copy Signing Secret from Basic Information
@@ -1222,14 +1222,14 @@ each person prefers to communicate.
 2. `npm install`
 3. Copy `.env.example` to `.env`, fill in tokens
 4. `npx tsx src/app.ts`
-5. Open Slack → test `/xiami @yourself`
+5. Open Slack → test `/syncraft @yourself`
 
 ## How It Works
-- **/xiami @user**: Shows availability, timezone, reply estimate, and communication style
-- **"Analyze with Xiami"**: Right-click a message to analyze its intent
-- **"Suggest Reply with Xiami"**: Right-click a message to get tailored reply suggestions
+- **/syncraft @user**: Shows availability, timezone, reply estimate, and communication style
+- **"Analyze with Syncraft"**: Right-click a message to analyze its intent
+- **"Suggest Reply with Syncraft"**: Right-click a message to get tailored reply suggestions
 - **App Home**: View/edit your profile and see your learned communication style
-- **Passive learning**: Xiami observes public channels to learn communication patterns
+- **Passive learning**: Syncraft observes public channels to learn communication patterns
   (metadata only — no message text is stored)
 
 ## Privacy
@@ -1239,14 +1239,14 @@ each person prefers to communicate.
 - Set sharing_enabled to false in your profile to opt out
 
 ## Testing Checklist
-- [ ] `/xiami @user` with existing profile
-- [ ] `/xiami @user` with no profile
-- [ ] `/xiami` with no argument
-- [ ] `/xiami reply` in a thread
+- [ ] `/syncraft @user` with existing profile
+- [ ] `/syncraft @user` with no profile
+- [ ] `/syncraft` with no argument
+- [ ] `/syncraft reply` in a thread
 - [ ] Open App Home → see welcome or profile
 - [ ] Set up / edit profile via modal
-- [ ] "Analyze with Xiami" shortcut on a message
-- [ ] "Suggest Reply with Xiami" shortcut on a message
+- [ ] "Analyze with Syncraft" shortcut on a message
+- [ ] "Suggest Reply with Syncraft" shortcut on a message
 - [ ] Verify communication style appears after ~20 messages
 - [ ] Clear My Data from App Home
 ```
@@ -1257,10 +1257,10 @@ each person prefers to communicate.
 
 | #  | Action                                           | Expected                                         |
 |----|--------------------------------------------------|--------------------------------------------------|
-| 1  | `/xiami` (no arg)                                | Usage hint with both commands                    |
-| 2  | `/xiami @self` (no profile)                      | "No profile" message                             |
+| 1  | `/syncraft` (no arg)                                | Usage hint with both commands                    |
+| 2  | `/syncraft @self` (no profile)                      | "No profile" message                             |
 | 3  | Set up profile via App Home modal                | Profile saved, App Home refreshes                |
-| 4  | `/xiami @self` (with profile)                    | Shows status, time, reply estimate               |
+| 4  | `/syncraft @self` (with profile)                    | Shows status, time, reply estimate               |
 | 5  | Change timezone, re-check                        | Local time updates                               |
 | 6  | Shortcut "Analyze" on "when will this be done?"  | Intent: eta_request + suggestion                 |
 | 7  | Shortcut "Analyze" on "any updates?"             | Intent: status_check                             |
@@ -1269,10 +1269,10 @@ each person prefers to communicate.
 | 10 | Check App Home after 25+ messages                | "Your Communication Style" section appears       |
 | 11 | Shortcut "Suggest Reply" on an eta_request       | Modal with 2–3 tailored suggestions              |
 | 12 | Shortcut "Suggest Reply" with thin data (<10)    | "Still learning..." with intent-only suggestions |
-| 13 | `/xiami reply` in a thread                       | Suggestion modal opens                           |
-| 14 | `/xiami reply` NOT in a thread                   | Error: "Use in a thread"                         |
+| 13 | `/syncraft reply` in a thread                       | Suggestion modal opens                           |
+| 14 | `/syncraft reply` NOT in a thread                   | Error: "Use in a thread"                         |
 | 15 | Click "Clear My Data" on App Home                | Data deleted, traits section resets              |
-| 16 | `/xiami @user` shows traits section              | Communication style info included                |
+| 16 | `/syncraft @user` shows traits section              | Communication style info included                |
 | 17 | Set sharing_enabled = false, send messages       | Observer skips this user's messages              |
 
 ---
@@ -1302,8 +1302,8 @@ PHASE 2 — Core Services
 
 PHASE 3 — Slash Command (Lookup)
   13. src/slack/blocks.ts — buildAvailabilityBlocks (include optional traits section)
-  14. src/slack/commands.ts — /xiami @user handler
-  → TEST: /xiami with and without profiles in Slack
+  14. src/slack/commands.ts — /syncraft @user handler
+  → TEST: /syncraft with and without profiles in Slack
 
 PHASE 4 — App Home + Profile Modal
   15. src/slack/blocks.ts — add buildAppHomeBlocks, buildEditProfileModal
@@ -1332,7 +1332,7 @@ PHASE 8 — Reply Suggestions
   26. src/services/replySuggestionService.ts — core suggestion engine
   27. src/slack/blocks.ts — add buildSuggestionModal
   28. src/slack/shortcuts.ts — add suggest_reply handler
-  29. src/slack/commands.ts — add /xiami reply sub-command
+  29. src/slack/commands.ts — add /syncraft reply sub-command
   → TEST: invoke suggestions on various message types, verify modal
 
 PHASE 9 — App Home: Traits + Privacy
@@ -1364,7 +1364,7 @@ PHASE 10 — Polish
 - **Handle the midnight-wrap** in sleep window calculations (see §7A).
 - **Slack encodes mentions as `<@U1234ABCD>`** in command text — parse with regex.
 - **Acknowledge all interactions immediately** — call `ack()` first in every handler.
-- **Keep the DB file** in project root as `xiami.db`. Add to `.gitignore`.
+- **Keep the DB file** in project root as `syncraft.db`. Add to `.gitignore`.
 - **Use `tsx` for development** — run with `npx tsx src/app.ts`.
 - **Pair dedup**: Always store pairs with lexicographically smaller user ID as `user_a`.
 - **Aggregation is lazy.** Trigger every 20 observations per user, not on every message.

@@ -1,7 +1,7 @@
-import { AvailabilityResult, XiamiProfile } from '../types';
+import { AvailabilityResult, SyncraftProfile } from '../types';
 
 type Status = AvailabilityResult['status'];
-type Speed = XiamiProfile['responseSpeed'];
+type Speed = SyncraftProfile['responseSpeed'];
 
 const ESTIMATES: Record<Status, Record<Speed, string> | string> = {
   likely_asleep: '6 – 10 hours',

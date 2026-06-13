@@ -5,7 +5,7 @@ import { aggregateUserTraits } from '../services/traitAggregator';
 import { buildEditProfileModal } from './blocks';
 import { refreshAppHome } from './appHome';
 import { isValidTimezone } from '../utils/time';
-import { XiamiProfile } from '../types';
+import { SyncraftProfile } from '../types';
 
 export function registerModals(app: App): void {
 
@@ -32,7 +32,7 @@ export function registerModals(app: App): void {
     const sleepStart = values.sleep_start_block?.sleep_start_input?.selected_time ?? '23:00';
     const sleepEnd = values.sleep_end_block?.sleep_end_input?.selected_time ?? '07:00';
     const role = values.role_block?.role_input?.value ?? '';
-    const responseSpeed = (values.speed_block?.speed_input?.selected_option?.value ?? 'medium') as XiamiProfile['responseSpeed'];
+    const responseSpeed = (values.speed_block?.speed_input?.selected_option?.value ?? 'medium') as SyncraftProfile['responseSpeed'];
 
     // Validate timezone
     const validTz = isValidTimezone(timezone) ? timezone : 'UTC';
@@ -49,7 +49,7 @@ export function registerModals(app: App): void {
       // ignore
     }
 
-    const profile: XiamiProfile = {
+    const profile: SyncraftProfile = {
       slackUserId: userId,
       displayName,
       timezone: validTz,

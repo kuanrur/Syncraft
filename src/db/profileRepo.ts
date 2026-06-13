@@ -1,5 +1,5 @@
 import { getDb } from './client';
-import { XiamiProfile } from '../types';
+import { SyncraftProfile } from '../types';
 
 interface ProfileRow {
   slack_user_id: string;
@@ -14,7 +14,7 @@ interface ProfileRow {
   sharing_enabled: number;
 }
 
-function rowToProfile(row: ProfileRow): XiamiProfile {
+function rowToProfile(row: ProfileRow): SyncraftProfile {
   return {
     slackUserId: row.slack_user_id,
     displayName: row.display_name,
@@ -24,18 +24,18 @@ function rowToProfile(row: ProfileRow): XiamiProfile {
     sleepStart: row.sleep_start,
     sleepEnd: row.sleep_end,
     role: row.role,
-    responseSpeed: row.response_speed as XiamiProfile['responseSpeed'],
+    responseSpeed: row.response_speed as SyncraftProfile['responseSpeed'],
     sharingEnabled: row.sharing_enabled === 1,
   };
 }
 
-export function getProfile(slackUserId: string): XiamiProfile | null {
+export function getProfile(slackUserId: string): SyncraftProfile | null {
   const db = getDb();
   const row = db.prepare('SELECT * FROM profiles WHERE slack_user_id = ?').get(slackUserId) as ProfileRow | undefined;
   return row ? rowToProfile(row) : null;
 }
 
-export function upsertProfile(profile: XiamiProfile): void {
+export function upsertProfile(profile: SyncraftProfile): void {
   const db = getDb();
   db.prepare(`
     INSERT INTO profiles (slack_user_id, display_name, timezone, work_start, work_end, sleep_start, sleep_end, role, response_speed, sharing_enabled, updated_at)

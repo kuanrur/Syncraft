@@ -1,4 +1,4 @@
-import { AvailabilityResult, XiamiProfile } from '../types';
+import { AvailabilityResult, SyncraftProfile } from '../types';
 import { parseTimeToMinutes, isInWrappingRange, nowInZone } from '../utils/time';
 
 const STATUS_LABELS: Record<AvailabilityResult['status'], string> = {
@@ -7,7 +7,7 @@ const STATUS_LABELS: Record<AvailabilityResult['status'], string> = {
   likely_asleep: 'Likely asleep 💤',
 };
 
-export function getAvailability(profile: XiamiProfile): AvailabilityResult {
+export function getAvailability(profile: SyncraftProfile): AvailabilityResult {
   const now = nowInZone(profile.timezone);
   const currentMinutes = now.hour * 60 + now.minute;
   const localTimeString = now.toFormat('h:mm a');

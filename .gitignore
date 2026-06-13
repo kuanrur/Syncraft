@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
-xiami.db
+syncraft.db
 *.db
 *.db-*
+.DS_Store
